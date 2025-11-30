@@ -1,282 +1,41 @@
 #include <stdio.h>
-#include <string.h>
-#include <time.h>
-#include <stdlib.h>
 
-typedef struct {
-    char studentName[50];
-    int studentID;
-    float scores[3];
-    float scorePercentage;
-    char scoreGrade;
-} PupilRecord;
-
-// Function to validate marks
-int validateScores(float scores) {
-    return (scores >= 0 && scores <= 100);
-}
-
-// Function to calculate percentage
-float computePercentage(float scores[3]) {
-    return (scores[0] + scores[1] + scores[2]) / 3.0;
-}
-
-// Function to get grade based on percentage
-char determineGrade(float scorePercentage) {
-    if (scorePercentage >= 90) return 'A' + 10;  // A+
-    else if (scorePercentage >= 80) return 'A';
-    else if (scorePercentage >= 70) return 'B' + 10;  // B+
-    else if (scorePercentage >= 60) return 'B';
-    else if (scorePercentage >= 50) return 'C';
-    else return 'F';
-}
-
-// Function to display grade name
-void showGrade(char scoreGrade) {
-    if (scoreGrade == 'A' + 10) printf("A+");
-    else if (scoreGrade == 'B' + 10) printf("B+");
-    else printf("%c", scoreGrade);
-}
-
-// Function to input student record
-void enterPupilData(PupilRecord *pupil) {
-    printf("\nEnter student name: ");
-    fgets(pupil->studentName, sizeof(pupil->studentName), stdin);
-    pupil->studentName[strcspn(pupil->studentName, "\n")] = 0;
-    
-    printf("Enter roll number: ");
-    scanf("%d", &pupil->studentID);
-    
-    for (int j = 0; j < 3; j++) {
-        do {
-            printf("Enter marks for subject %d (0-100): ", j + 1);
-            scanf("%f", &pupil->scores[j]);
-            if (!validateScores(pupil->scores[j])) {
-                printf("Invalid marks! Please enter marks between 0-100.\n");
-            }
-        } while (!validateScores(pupil->scores[j]));
+float computeTotalPayment(float principal, float interestRate, float yearlyPayment, int duration, int currentYear)
+{
+    if (principal <= 0 || duration == 0) {
+        printf("Loan fully repaid or no years left.\n");
+        return 0;
     }
-    getchar(); // Consume newline
-    
-    pupil->scorePercentage = computePercentage(pupil->scores);
-    pupil->scoreGrade = determineGrade(pupil->scorePercentage);
+
+    principal = principal + (principal * interestRate / 100.0);
+    float balance = principal - yearlyPayment;
+    if (balance < 0) balance = 0;
+
+    printf("Year %d: Remaining loan = %.2f\n", currentYear, balance);
+
+    return yearlyPayment + computeTotalPayment(balance, interestRate, yearlyPayment, duration - 1, currentYear + 1);
 }
 
-// Function to display student record
-void showPupilRecord(const PupilRecord *pupil, int position) {
-    printf("\n----------- Student Record -----------\n");
-    printf("Name: %s\n", pupil->studentName);
-    printf("Roll Number: %d\n", pupil->studentID);
-    printf("Marks: %.2f, %.2f, %.2f\n", pupil->scores[0], pupil->scores[1], pupil->scores[2]);
-    printf("Percentage: %.2f%%\n", pupil->scorePercentage);
-    printf("Grade: ");
-    showGrade(pupil->scoreGrade);
-    printf("\nRank: %d\n", position);
-    printf("---------------------------------------\n");
-}
+int main()
+{
+    float initialLoan, annualRate, annualInstallment;
+    int loanTerm;
 
-// Function to search student by roll number
-void findById(PupilRecord pupilRecords[], int totalCount) {
-    int searchID;
-    printf("Enter roll number to search: ");
-    scanf("%d", &searchID);
-    getchar();
-    
-    for (int j = 0; j < totalCount; j++) {
-        if (pupilRecords[j].studentID == searchID) {
-            showPupilRecord(&pupilRecords[j], j + 1);
-            return;
-        }
-    }
-    printf("Student not found!\n");
-}
+    printf("Enter loan amount: ");
+    scanf("%f", &initialLoan);
 
-// Function to search student by name
-void findByName(PupilRecord pupilRecords[], int totalCount) {
-    char searchName[50];
-    printf("Enter student name to search: ");
-    fgets(searchName, sizeof(searchName), stdin);
-    searchName[strcspn(searchName, "\n")] = 0;
-    
-    int isFound = 0;
-    for (int j = 0; j < totalCount; j++) {
-        if (strstr(pupilRecords[j].studentName, searchName) != NULL) {
-            showPupilRecord(&pupilRecords[j], j + 1);
-            isFound = 1;
-        }
-    }
-    if (!isFound) printf("Student not found!\n");
-}
+    printf("Enter yearly interest rate: ");
+    scanf("%f", &annualRate);
 
-// Function to find students by grade
-void findByScoreGrade(PupilRecord pupilRecords[], int totalCount) {
-    char searchGrade;
-    printf("Enter grade to search (A/B/C/F or A+/B+ for plus grades): ");
-    scanf("%c", &searchGrade);
-    getchar();
-    
-    printf("\nStudents with grade ");
-    if (searchGrade == 'A' || searchGrade == 'B' || searchGrade == 'C' || searchGrade == 'F') {
-        char nextChar;
-        scanf("%c", &nextChar);
-        if (nextChar == '+') {
-            searchGrade = searchGrade + 10;
-            showGrade(searchGrade);
-        } else {
-            ungetc(nextChar, stdin);
-            showGrade(searchGrade);
-        }
-    } else {
-        showGrade(searchGrade);
-    }
-    printf(":\n");
-    
-    int isFound = 0;
-    for (int j = 0; j < totalCount; j++) {
-        if (pupilRecords[j].scoreGrade == searchGrade) {
-            printf("%d. %s (Roll: %d) - %.2f%%\n", ++isFound, pupilRecords[j].studentName, 
-                   pupilRecords[j].studentID, pupilRecords[j].scorePercentage);
-        }
-    }
-    if (isFound == 0) printf("No students found with this grade!\n");
-}
+    printf("Enter number of years: ");
+    scanf("%d", &loanTerm);
 
-// Function to calculate class average
-float computeClassAverage(PupilRecord pupilRecords[], int totalCount) {
-    float totalSum = 0;
-    for (int j = 0; j < totalCount; j++) {
-        totalSum += pupilRecords[j].scorePercentage;
-    }
-    return totalSum / totalCount;
-}
+    printf("Enter yearly installment: ");
+    scanf("%f", &annualInstallment);
 
-// Function to display students above/below average
-void showAboveBelowAverage(PupilRecord pupilRecords[], int totalCount) {
-    float avgScore = computeClassAverage(pupilRecords, totalCount);
-    printf("\nClass Average: %.2f%%\n", avgScore);
-    
-    printf("\nStudents ABOVE average:\n");
-    for (int j = 0; j < totalCount; j++) {
-        if (pupilRecords[j].scorePercentage > avgScore) {
-            printf("%s (Roll: %d) - %.2f%%\n", pupilRecords[j].studentName, 
-                   pupilRecords[j].studentID, pupilRecords[j].scorePercentage);
-        }
-    }
-    
-    printf("\nStudents BELOW average:\n");
-    for (int j = 0; j < totalCount; j++) {
-        if (pupilRecords[j].scorePercentage < avgScore) {
-            printf("%s (Roll: %d) - %.2f%%\n", pupilRecords[j].studentName, 
-                   pupilRecords[j].studentID, pupilRecords[j].scorePercentage);
-        }
-    }
-}
+    float totalPaid = computeTotalPayment(initialLoan, annualRate, annualInstallment, loanTerm, 1);
 
-// Function to sort and display rankings
-void showClassRankings(PupilRecord pupilRecords[], int totalCount) {
-    PupilRecord *sortedRecords = (PupilRecord *)malloc(totalCount * sizeof(PupilRecord));
-    for (int j = 0; j < totalCount; j++) {
-        sortedRecords[j] = pupilRecords[j];
-    }
-    
-    // Bubble sort by percentage
-    for (int j = 0; j < totalCount - 1; j++) {
-        for (int k = 0; k < totalCount - j - 1; k++) {
-            if (sortedRecords[k].scorePercentage < sortedRecords[k + 1].scorePercentage) {
-                PupilRecord tempRecord = sortedRecords[k];
-                sortedRecords[k] = sortedRecords[k + 1];
-                sortedRecords[k + 1] = tempRecord;
-            }
-        }
-    }
-    
-    printf("\n========== CLASS RANKINGS ==========\n");
-    for (int j = 0; j < totalCount; j++) {
-        printf("%d. %s (Roll: %d) - %.2f%% - Grade: ", j + 1, 
-               sortedRecords[j].studentName, sortedRecords[j].studentID, sortedRecords[j].scorePercentage);
-        showGrade(sortedRecords[j].scoreGrade);
-        printf("\n");
-    }
-    printf("====================================\n");
-    
-    free(sortedRecords);
-}
+    printf("Total repayment = %.2f\n", totalPaid);
 
-int main() {
-    int maxPupils = 50;
-    PupilRecord pupilRecords[50];
-    int totalCount = 0;
-    int userChoice;
-    
-    printf("====== STUDENT RECORD SYSTEM ======\n");
-    
-    do {
-        printf("\n1. Add Student\n");
-        printf("2. Display All Students\n");
-        printf("3. Search by Roll Number\n");
-        printf("4. Search by Name\n");
-        printf("5. Find Students by Grade\n");
-        printf("6. Display Class Average and Above/Below Average\n");
-        printf("7. Display Student Rankings\n");
-        printf("8. Exit\n");
-        printf("Enter your choice: ");
-        scanf("%d", &userChoice);
-        getchar();
-        
-        switch (userChoice) {
-            case 1:
-                if (totalCount < maxPupils) {
-                    enterPupilData(&pupilRecords[totalCount]);
-                    totalCount++;
-                    printf("Student added successfully!\n");
-                } else {
-                    printf("Maximum students reached!\n");
-                }
-                break;
-                
-            case 2:
-                if (totalCount == 0) {
-                    printf("No students in the system!\n");
-                } else {
-                    for (int j = 0; j < totalCount; j++) {
-                        showPupilRecord(&pupilRecords[j], j + 1);
-                    }
-                }
-                break;
-                
-            case 3:
-                if (totalCount == 0) printf("No students in system!\n");
-                else findById(pupilRecords, totalCount);
-                break;
-                
-            case 4:
-                if (totalCount == 0) printf("No students in system!\n");
-                else findByName(pupilRecords, totalCount);
-                break;
-                
-            case 5:
-                if (totalCount == 0) printf("No students in system!\n");
-                else findByScoreGrade(pupilRecords, totalCount);
-                break;
-                
-            case 6:
-                if (totalCount == 0) printf("No students in system!\n");
-                else showAboveBelowAverage(pupilRecords, totalCount);
-                break;
-                
-            case 7:
-                if (totalCount == 0) printf("No students in system!\n");
-                else showClassRankings(pupilRecords, totalCount);
-                break;
-                
-            case 8:
-                printf("Exiting...\n");
-                break;
-                
-            default:
-                printf("Invalid choice!\n");
-        }
-    } while (userChoice != 8);
-    
     return 0;
 }
