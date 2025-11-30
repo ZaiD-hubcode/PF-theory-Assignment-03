@@ -1,0 +1,197 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+typedef struct {
+    int pupilID;
+    char pupilName[100];
+    char studentGroup[20];
+    char societyType[10];
+    char joinDate[11];
+    char birthDate[11];
+    char preference[10];
+} Member;
+
+Member *members = NULL;
+int memberCount = 0;
+
+void readDataFile(const char *datafile) {
+    FILE *input = fopen(datafile, "rb");
+    if (input == NULL) {
+        printf("No existing database found. Starting fresh.\n");
+        return;
+    }
+    fread(&memberCount, sizeof(int), 1, input);
+    members = (Member *)malloc(memberCount * sizeof(Member));
+    if (members == NULL) {
+        printf("Memory allocation failed.\n");
+        fclose(input);
+        return;
+    }
+    fread(members, sizeof(Member), memberCount, input);
+    fclose(input);
+    printf("Database loaded successfully.\n");
+}
+
+void writeDataFile(const char *datafile) {
+    FILE *output = fopen(datafile, "wb");
+    if (output == NULL) {
+        printf("Error opening file for saving.\n");
+        return;
+    }
+    fwrite(&memberCount, sizeof(int), 1, output);
+    fwrite(members, sizeof(Member), memberCount, output);
+    fclose(output);
+    printf("Database saved successfully.\n");
+}
+
+void registerMember(Member newMember, const char *datafile) {
+    for (int j = 0; j < memberCount; j++) {
+        if (members[j].pupilID == newMember.pupilID) {
+            printf("Student ID already exists.\n");
+            return;
+        }
+    }
+    members = (Member *)realloc(members, (memberCount + 1) * sizeof(Member));
+    if (members == NULL) {
+        printf("Memory allocation failed.\n");
+        return;
+    }
+    members[memberCount] = newMember;
+    memberCount++;
+    writeDataFile(datafile);
+    printf("Student added successfully.\n");
+}
+
+void modifyMember(int pupilID, const char *datafile) {
+    for (int j = 0; j < memberCount; j++) {
+        if (members[j].pupilID == pupilID) {
+            printf("Enter new batch: ");
+            scanf("%s", members[j].studentGroup);
+            printf("Enter new membership type: ");
+            scanf("%s", members[j].societyType);
+            writeDataFile(datafile);
+            printf("Student updated successfully.\n");
+            return;
+        }
+    }
+    printf("Student not found.\n");
+}
+
+void removeMember(int pupilID, const char *datafile) {
+    for (int j = 0; j < memberCount; j++) {
+        if (members[j].pupilID == pupilID) {
+            for (int k = j; k < memberCount - 1; k++) {
+                members[k] = members[k + 1];
+            }
+            memberCount--;
+            members = (Member *)realloc(members, memberCount * sizeof(Member));
+            writeDataFile(datafile);
+            printf("Student deleted successfully.\n");
+            return;
+        }
+    }
+    printf("Student not found.\n");
+}
+
+void showAllMembers() {
+    if (memberCount == 0) {
+        printf("No students registered.\n");
+        return;
+    }
+    for (int j = 0; j < memberCount; j++) {
+        printf("ID: %d, Name: %s, Batch: %s, Membership: %s, Reg Date: %s, DOB: %s, Interest: %s\n",
+               members[j].pupilID, members[j].pupilName, members[j].studentGroup,
+               members[j].societyType, members[j].joinDate,
+               members[j].birthDate, members[j].preference);
+    }
+}
+
+void createGroupReport(char *studentGroup, char *preference) {
+    printf("Students in batch %s with interest %s:\n", studentGroup, preference);
+    int foundResult = 0;
+    for (int j = 0; j < memberCount; j++) {
+        if (strcmp(members[j].studentGroup, studentGroup) == 0 && strcmp(members[j].preference, preference) == 0) {
+            printf("ID: %d, Name: %s\n", members[j].pupilID, members[j].pupilName);
+            foundResult = 1;
+        }
+    }
+    if (!foundResult) {
+        printf("No students found.\n");
+    }
+}
+
+int main() {
+    const char *datafile = "members.dat";
+    readDataFile(datafile);
+
+    int userSelection;
+    do {
+        printf("\nMenu:\n");
+        printf("1. Register new student\n");
+        printf("2. Update student\n");
+        printf("3. Delete student\n");
+        printf("4. View all registrations\n");
+        printf("5. Generate batch-wise report\n");
+        printf("6. Exit\n");
+        printf("Enter choice: ");
+        scanf("%d", &userSelection);
+
+        switch (userSelection) {
+            case 1: {
+                Member newMember;
+                printf("Enter student ID: ");
+                scanf("%d", &newMember.pupilID);
+                printf("Enter full name: ");
+                scanf(" %[^\n]", newMember.pupilName);
+                printf("Enter batch (CS/SE/Cyber Security/AI): ");
+                scanf("%s", newMember.studentGroup);
+                printf("Enter membership type (IEEE/ACM): ");
+                scanf("%s", newMember.societyType);
+                printf("Enter registration date (YYYY-MM-DD): ");
+                scanf("%s", newMember.joinDate);
+                printf("Enter date of birth (YYYY-MM-DD): ");
+                scanf("%s", newMember.birthDate);
+                printf("Enter interest (IEEE/ACM/Both): ");
+                scanf("%s", newMember.preference);
+                registerMember(newMember, datafile);
+                break;
+            }
+            case 2: {
+                int searchID;
+                printf("Enter student ID to update: ");
+                scanf("%d", &searchID);
+                modifyMember(searchID, datafile);
+                break;
+            }
+            case 3: {
+                int deleteID;
+                printf("Enter student ID to delete: ");
+                scanf("%d", &deleteID);
+                removeMember(deleteID, datafile);
+                break;
+            }
+            case 4:
+                showAllMembers();
+                break;
+            case 5: {
+                char group[20], pref[10];
+                printf("Enter batch: ");
+                scanf("%s", group);
+                printf("Enter interest: ");
+                scanf("%s", pref);
+                createGroupReport(group, pref);
+                break;
+            }
+            case 6:
+                writeDataFile(datafile);
+                free(members);
+                printf("Exiting...\n");
+                break;
+            default:
+                printf("Invalid choice.\n");
+        }
+    } while (userSelection != 6);
+
+    return 0;
+}
