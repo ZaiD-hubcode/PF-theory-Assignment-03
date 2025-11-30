@@ -1,0 +1,75 @@
+#include <stdio.h>
+#include <string.h>
+
+struct LibraryItem {
+    int itemCode;
+    int usageCount;
+    int accessTime;
+};
+
+void insertItem(struct LibraryItem storage[], int *currentCount, int maxCapacity, int code, int usage, int *timestamp) {
+    int position = -1;
+    for (int j = 0; j < *currentCount; j++) {
+        if (storage[j].itemCode == code) {
+            position = j;
+            break;
+        }
+    }
+    if (position != -1) {
+        storage[position].usageCount = usage;
+        storage[position].accessTime = (*timestamp)++;
+        return;
+    }
+    if (*currentCount == maxCapacity) {
+        int oldestIndex = 0;
+        for (int j = 1; j < *currentCount; j++) {
+            if (storage[j].accessTime < storage[oldestIndex].accessTime) {
+                oldestIndex = j;
+            }
+        }
+        for (int j = oldestIndex; j < *currentCount - 1; j++) {
+            storage[j] = storage[j + 1];
+        }
+        (*currentCount)--;
+    }
+    storage[*currentCount].itemCode = code;
+    storage[*currentCount].usageCount = usage;
+    storage[*currentCount].accessTime = (*timestamp)++;
+    (*currentCount)++;
+}
+
+int retrieveItem(struct LibraryItem storage[], int currentCount, int code, int *timestamp) {
+    for (int j = 0; j < currentCount; j++) {
+        if (storage[j].itemCode == code) {
+            storage[j].accessTime = (*timestamp)++;
+            return storage[j].usageCount;
+        }
+    }
+    return -1;
+}
+
+int main() {
+    int maxSize, operationCount;
+    printf("Enter capacity and number of operations: ");
+    scanf("%d %d", &maxSize, &operationCount);
+    struct LibraryItem storage[maxSize];
+    int itemCount = 0;
+    int currentTime = 0;
+    for (int j = 0; j < operationCount; j++) {
+        char operation[10];
+        printf("Enter operation (ADD or ACCESS): ");
+        scanf("%s", operation);
+        if (strcmp(operation, "ADD") == 0) {
+            int itemId, usageValue;
+            printf("Enter book id and popularity: ");
+            scanf("%d %d", &itemId, &usageValue);
+            insertItem(storage, &itemCount, maxSize, itemId, usageValue, &currentTime);
+        } else if (strcmp(operation, "ACCESS") == 0) {
+            int searchId;
+            printf("Enter book id: ");
+            scanf("%d", &searchId);
+            printf("%d\n", retrieveItem(storage, itemCount, searchId, &currentTime));
+        }
+    }
+    return 0;
+}
