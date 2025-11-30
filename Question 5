@@ -1,0 +1,184 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+void addEntry(char ***entries, int *entryCount, int *maxCapacity, int position, char *content) {
+    if (position < 0 || position > *entryCount) {
+        printf("Invalid index.\n");
+        return;
+    }
+
+    if (*entryCount == *maxCapacity) {
+        *maxCapacity *= 2;
+        *entries = realloc(*entries, *maxCapacity * sizeof(char *));
+        if (!*entries) {
+            printf("Memory allocation failed\n");
+            exit(1);
+        }
+    }
+
+    for (int j = *entryCount; j > position; j--) {
+        (*entries)[j] = (*entries)[j - 1];
+    }
+
+    (*entries)[position] = malloc(strlen(content) + 1);
+    strcpy((*entries)[position], content);
+
+    (*entryCount)++;
+}
+
+void removeEntry(char ***entries, int *entryCount, int position) {
+    if (position < 0 || position >= *entryCount) {
+        printf("Invalid index.\n");
+        return;
+    }
+
+    free((*entries)[position]);
+
+    for (int j = position; j < *entryCount - 1; j++) {
+        (*entries)[j] = (*entries)[j + 1];
+    }
+
+    (*entryCount)--;
+}
+
+void displayAllEntries(char **entries, int entryCount) {
+    if (entryCount == 0) {
+        printf("Nothing to print.\n");
+        return;
+    }
+
+    for (int j = 0; j < entryCount; j++) {
+        printf("%d: %s\n", j + 1, entries[j]);
+    }
+}
+
+void cleanupMemory(char **entries, int entryCount) {
+    for (int j = 0; j < entryCount; j++) {
+        free(entries[j]);
+    }
+    free(entries);
+}
+
+void optimizeStorage(char ***entries, int *maxCapacity, int entryCount) {
+    *maxCapacity = entryCount;
+    *entries = realloc(*entries, *maxCapacity * sizeof(char *));
+}
+
+void storeToDisk(char **entries, int entryCount) {
+    char filepath[100];
+    printf("Enter filename to save: ");
+    scanf("%s", filepath);
+
+    FILE *outputFile = fopen(filepath, "w");
+    if (!outputFile) {
+        printf("Error opening file.\n");
+        return;
+    }
+
+    for (int j = 0; j < entryCount; j++) {
+        fprintf(outputFile, "%s\n", entries[j]);
+    }
+
+    fclose(outputFile);
+    printf("Saved successfully.\n");
+}
+
+void readFromDisk(char ***entries, int *entryCount, int *maxCapacity) {
+    char filepath[100];
+    printf("Enter filename to load: ");
+    scanf("%s", filepath);
+
+    FILE *inputFile = fopen(filepath, "r");
+    if (!inputFile) {
+        printf("Error opening file.\n");
+        return;
+    }
+
+    for (int j = 0; j < *entryCount; j++)
+        free((*entries)[j]);
+
+    *entryCount = 0;
+
+    char inputBuffer[1024];
+
+    while (fgets(inputBuffer, sizeof(inputBuffer), inputFile)) {
+        inputBuffer[strcspn(inputBuffer, "\n")] = 0;
+        addEntry(entries, entryCount, maxCapacity, *entryCount, inputBuffer);
+    }
+
+    fclose(inputFile);
+    printf("Loaded successfully.\n");
+}
+
+int main() {
+    int maxCapacity = 10;
+    int entryCount = 0;
+
+    char **entries = malloc(maxCapacity * sizeof(char *));
+    if (!entries) {
+        printf("Memory error\n");
+        return 1;
+    }
+
+    int userChoice;
+
+    while (1) {
+        printf("\n--- TEXT BUFFER MENU ---\n");
+        printf("1. Insert Line\n");
+        printf("2. Delete Line\n");
+        printf("3. Print All Lines\n");
+        printf("4. Shrink Buffer to Fit\n");
+        printf("5. Save to File\n");
+        printf("6. Load from File\n");
+        printf("7. Exit\n");
+        printf("Enter choice: ");
+
+        scanf("%d", &userChoice);
+        getchar();
+
+        if (userChoice == 1) {
+            int insertPos;
+            char inputText[1024];
+
+            printf("Enter index to insert (1 to %d): ", entryCount + 1);
+            scanf("%d", &insertPos);
+            getchar();
+
+            printf("Enter text: ");
+            fgets(inputText, sizeof(inputText), stdin);
+            inputText[strcspn(inputText, "\n")] = 0;
+
+            addEntry(&entries, &entryCount, &maxCapacity, insertPos - 1, inputText);
+
+        } else if (userChoice == 2) {
+            int deletePos;
+            printf("Enter index to delete: ");
+            scanf("%d", &deletePos);
+
+            removeEntry(&entries, &entryCount, deletePos - 1);
+
+        } else if (userChoice == 3) {
+            displayAllEntries(entries, entryCount);
+
+        } else if (userChoice == 4) {
+            optimizeStorage(&entries, &maxCapacity, entryCount);
+            printf("Buffer shrunk.\n");
+
+        } else if (userChoice == 5) {
+            storeToDisk(entries, entryCount);
+
+        } else if (userChoice == 6) {
+            readFromDisk(&entries, &entryCount, &maxCapacity);
+
+        } else if (userChoice == 7) {
+            break;
+
+        } else {
+            printf("Invalid choice.\n");
+        }
+    }
+
+    cleanupMemory(entries, entryCount);
+    return 0;
+}
