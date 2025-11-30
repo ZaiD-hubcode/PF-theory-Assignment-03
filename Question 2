@@ -1,0 +1,35 @@
+#include <stdio.h>
+
+void computeFuelUsage(int currentFuel, int usageRate, int refillAmount, int solarGain, int currentPlanet, int maxPlanets) {
+    if (currentPlanet > maxPlanets || currentFuel < usageRate) {
+        if (currentFuel < usageRate) {
+            printf("Fuel exhausted before reaching planet %d\n", currentPlanet);
+        } else {
+            printf("Journey completed\n");
+        }
+        return;
+    }
+    currentFuel -= usageRate;
+    if (currentPlanet % 4 == 0) {
+        currentFuel += solarGain;
+    }
+    currentFuel += refillAmount;
+    printf("Planet %d: Fuel Remaining = %d\n", currentPlanet, currentFuel);
+    computeFuelUsage(currentFuel, usageRate, refillAmount, solarGain, currentPlanet + 1, maxPlanets);
+}
+
+int main() {
+    int initialFuel, fuelUsage, rechargeValue, solarBonus, planetCount;
+    printf("Enter initial fuel: ");
+    scanf("%d", &initialFuel);
+    printf("Enter fuel consumption per planet: ");
+    scanf("%d", &fuelUsage);
+    printf("Enter recharge amount per planet: ");
+    scanf("%d", &rechargeValue);
+    printf("Enter solar bonus: ");
+    scanf("%d", &solarBonus);
+    printf("Enter total planets: ");
+    scanf("%d", &planetCount);
+    computeFuelUsage(initialFuel, fuelUsage, rechargeValue, solarBonus, 1, planetCount);
+    return 0;
+}
