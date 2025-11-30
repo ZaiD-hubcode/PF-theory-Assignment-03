@@ -1,0 +1,74 @@
+#include <stdio.h>
+#include <string.h>
+
+struct Staff {
+    int empId;
+    char empName[50];
+    char jobTitle[50];
+    float income;
+};
+
+void showAllStaff(struct Staff staffList[], int count) {
+    printf("ID\tName\tDesignation\tSalary\n");
+    for (int j = 0; j < count; j++) {
+        printf("%d\t%s\t%s\t%.2f\n", staffList[j].empId, staffList[j].empName, staffList[j].jobTitle, staffList[j].income);
+    }
+}
+
+void findTopEarner(struct Staff staffList[], int count) {
+    int topIndex = 0;
+    for (int j = 1; j < count; j++) {
+        if (staffList[j].income > staffList[topIndex].income) {
+            topIndex = j;
+        }
+    }
+    printf("Highest Salary Employee:\n");
+    printf("ID: %d, Name: %s, Designation: %s, Salary: %.2f\n", staffList[topIndex].empId, staffList[topIndex].empName, staffList[topIndex].jobTitle, staffList[topIndex].income);
+}
+
+void locateEmployee(struct Staff staffList[], int count, int targetId, char targetName[]) {
+    for (int j = 0; j < count; j++) {
+        if (staffList[j].empId == targetId || strcmp(staffList[j].empName, targetName) == 0) {
+            printf("Found: ID: %d, Name: %s, Designation: %s, Salary: %.2f\n", staffList[j].empId, staffList[j].empName, staffList[j].jobTitle, staffList[j].income);
+            return;
+        }
+    }
+    printf("Employee not found\n");
+}
+
+void giveIncrement(struct Staff staffList[], int count, float salaryLimit) {
+    for (int j = 0; j < count; j++) {
+        if (staffList[j].income < salaryLimit) {
+            staffList[j].income *= 1.1;
+        }
+    }
+}
+
+int main() {
+    int employeeCount;
+    printf("Enter number of employees: ");
+    scanf("%d", &employeeCount);
+    struct Staff staffList[employeeCount];
+    for (int j = 0; j < employeeCount; j++) {
+        printf("Enter ID, Name, Designation, Salary: ");
+        scanf("%d %s %s %f", &staffList[j].empId, staffList[j].empName, staffList[j].jobTitle, &staffList[j].income);
+    }
+    showAllStaff(staffList, employeeCount);
+    findTopEarner(staffList, employeeCount);
+    int userSelection;
+    printf("1. Search by ID\n2. Search by Name\n");
+    scanf("%d", &userSelection);
+    if (userSelection == 1) {
+        int searchId;
+        scanf("%d", &searchId);
+        locateEmployee(staffList, employeeCount, searchId, "");
+    } else {
+        char searchName[50];
+        scanf("%s", searchName);
+        locateEmployee(staffList, employeeCount, -1, searchName);
+    }
+    giveIncrement(staffList, employeeCount, 50000);
+    printf("After bonus:\n");
+    showAllStaff(staffList, employeeCount);
+    return 0;
+}
